@@ -234,3 +234,81 @@ test("does not delete an absent or mismatched target", () => {
 	assert.equal(getCalloutDeletion(markdown, { ...callout, endLine: 3 }), null);
 	assert.equal(getCalloutDeletion(markdown, { ...callout, title: "Changed title" }), null);
 });
+
+for (const underline of ["=====", "-----", "=", "-"]) {
+	test(`preserves an adjacent Setext heading with ${underline}`, () => {
+		const outside = `Keep heading\n${underline}`;
+		const markdown = `Before\n\n> [!note] Delete\n> Body\n${outside}\n\nAfter`;
+		assert.equal(parseCallouts(markdown)[0].endLine, 4);
+		assert.equal(deleteCallout(markdown), `Before\n\n${outside}\n\nAfter`);
+	});
+}
+
+test("only the line immediately before a Setext underline starts the outside heading", () => {
+	const markdown = "> [!note]\n> Body\nFirst lazy line\nSecond line\n=====";
+	assert.equal(parseCallouts(markdown)[0].endLine, 3);
+	assert.equal(deleteCallout(markdown), "Second line\n=====");
+});
+
+for (const underline of [" ===", "=== ", "===\t", "> ==="]) {
+	test(`keeps non-Setext continuation with ${JSON.stringify(underline)} in the callout`, () => {
+		assert.equal(deleteCallout(`> [!note]\n> Body\nHeading\n${underline}\n\nAfter`), "After");
+	});
+}
+
+for (const outside of [
+	"$$\nx^2\n$$", "$$ first line\nsecond", "$$$x\n", "$$\n",
+	"%%\nKeep this comment\n%%", "%% first line\nsecond", "%%", "%% comment",
+	'<meta charset="utf-8">', "<hgroup>\nKeep\n</hgroup>", "</pre>", "<pre/>",
+	"<!doctype html>", '<div\u00a0class="x">', '<script\u00a0src="x">',
+]) {
+	test(`preserves an adjacent standalone block ${JSON.stringify(outside)}`, () => {
+		const markdown = `> [!note]\n> Body\n${outside}`;
+		assert.equal(parseCallouts(markdown)[0].endLine, 2);
+		assert.equal(deleteCallout(markdown), outside);
+	});
+}
+
+for (const continuation of [
+	"$$x$$", "$$ x $$", "text $$math$$", "$$x$", "%%comment%%", "%% comment %%",
+	"text %%comment%%", "%%first%line", "%%%", "<textarea>\ninside\n</textarea>",
+	"<script/>", "</script>", "<style/>", "</style>",
+]) {
+	test(`retains inline or lazy continuation ${JSON.stringify(continuation)}`, () => {
+		assert.equal(deleteCallout(`> [!note]\n> Body\n${continuation}\n\nAfter`), "After");
+	});
+}
+
+for (const text of ["$$", "$$ x"]) {
+	test(`math-like text ${JSON.stringify(text)} without a final newline stays in the callout`, () => {
+		assert.equal(deleteCallout(`> [!note]\n> Body\n${text}`), "");
+	});
+}
+
+for (const newline of ["\n", "\r\n"]) {
+	test(`a non-ASCII blank line terminates the callout without deleting following text (${JSON.stringify(newline)})`, () => {
+		const outside = `\u00a0${newline}Outside paragraph${newline}${newline}After`;
+		const markdown = `> [!note] Delete${newline}> Body${newline}${outside}`;
+		assert.equal(parseCallouts(markdown)[0].endLine, 2);
+		assert.equal(deleteCallout(markdown), outside);
+	});
+}
+
+test("an outside Setext heading also ends a quoted code fence", () => {
+	const markdown = "> [!note]\n> ```\nlazy code\nKeep heading\n=====\n\n> [!tip] Next";
+	assert.deepEqual(parseCallouts(markdown).map(({ line, endLine }) => [line, endLine]), [[0, 3], [6, 7]]);
+	assert.equal(deleteCallout(markdown), "Keep heading\n=====\n\n> [!tip] Next");
+});
+
+for (const [fencePrefix, headingPrefix, underlinePrefix] of [
+	["> > ", "", "> "],
+	["> > ", "> ", "> "],
+	["> > > ", "", "> > "],
+	["> > > ", "> ", "> > "],
+]) {
+	test(`a nested fence ends at a Setext heading across missing quote markers (${JSON.stringify([fencePrefix, headingPrefix, underlinePrefix])})`, () => {
+		const markdown = `> [!note] Outer\n${fencePrefix}\`\`\`\n${headingPrefix}Heading\n${underlinePrefix}===\n> [!tip] Keep\n> Body`;
+		assert.deepEqual(parseCallouts(markdown).map(({ line, endLine }) => [line, endLine]), [[0, 4], [4, 6]]);
+		assert.equal(deleteCallout(markdown), "> [!tip] Keep\n> Body");
+	});
+}

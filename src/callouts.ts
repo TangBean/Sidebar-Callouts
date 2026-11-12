@@ -64,21 +64,24 @@ const FENCE_LINE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 const BLOCK_HTML_TAGS = new Set((
 	"address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|"
 	+ "fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|"
-	+ "li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|"
+	+ "hgroup|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|pre|section|source|summary|table|tbody|td|"
 	+ "tfoot|th|thead|title|tr|track|ul"
 ).split("|"));
 
-function interruptsBlockquote(line: string): boolean {
-	if (BLANK_LINE.test(line) || /^ {4}|^ {0,3}\t/.test(line)) return true;
+function interruptsBlockquote(line: string, nextLine: string | undefined, hasNewline: boolean): boolean {
+	if (line.trim().length === 0 || /^ {4}|^ {0,3}\t/.test(line)) return true;
 	const text = line.replace(/^ {0,3}/, "");
+	if (nextLine !== undefined && /^(?:=+|-+)$/.test(nextLine)) return true;
+	if (hasNewline && /^\${2,}[^$]*$/.test(text)) return true;
+	if (/^%%[^%]*$/.test(text)) return true;
 	if (/^#{1,6}(?:[ \t]|$)/.test(text)) return true;
 	if (/^(?:[*+-]|1[.)])(?:[ \t]|$)/.test(text)) return true;
 	if (/^(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})$/.test(text)) return true;
 	const fence = text.match(FENCE_LINE);
 	if (fence && (fence[1]?.[0] !== "`" || !fence[2]?.includes("`"))) return true;
-	if (/^<(?:!--|\?|![A-Z]|!\[CDATA\[)/.test(text)) return true;
-	if (/^<(?:script|pre|style|textarea)(?:[ \t>]|$)/i.test(text)) return true;
-	const htmlTag = text.match(/^<\/?([A-Za-z][A-Za-z0-9-]*)(?=[ \t]|\/?>|$)/)?.[1];
+	if (/^<(?:!--|\?|![A-Za-z]|!\[CDATA\[)/.test(text)) return true;
+	if (/^<(?:script|pre|style)(?=\s|>|$)/i.test(text)) return true;
+	const htmlTag = text.match(/^<\/?([A-Za-z][A-Za-z0-9-]*)(?=\s|\/?>|$)/)?.[1];
 	return htmlTag !== undefined && BLOCK_HTML_TAGS.has(htmlTag.toLowerCase());
 }
 
@@ -107,10 +110,20 @@ function stripQuotes(line: string, depth: number): { text: string; depth: number
 	return { text, depth };
 }
 
-function advanceFence(line: string, fence: Fence | null): { fence: Fence | null; isCode: boolean } {
+function advanceFence(
+	line: string, fence: Fence | null, nextLine: string | undefined, hasNewline: boolean,
+): { fence: Fence | null; isCode: boolean } {
 	if (fence) {
 		const stripped = stripQuotes(line, fence.quoteDepth);
-		if (stripped.depth === fence.quoteDepth || !interruptsBlockquote(stripped.text)) {
+		let containerEnded = false;
+		for (let depth = stripped.depth; depth < fence.quoteDepth; depth++) {
+			const next = nextLine === undefined ? undefined : stripQuotes(nextLine, depth).text;
+			if (interruptsBlockquote(stripped.text, next, hasNewline)) {
+				containerEnded = true;
+				break;
+			}
+		}
+		if (!containerEnded) {
 			const match = stripped.text.match(FENCE_LINE);
 			const marker = match?.[1] ?? "";
 			const closes = marker[0] === fence.marker
@@ -157,8 +170,10 @@ function parseLines(lines: MarkdownLine[]): ParsedCallout[] {
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i];
 		if (!line) continue;
-		if (!QUOTED_LINE.test(line.text) && interruptsBlockquote(line.text)) current = null;
-		const state = advanceFence(line.text, fence);
+		const nextLine = lines[i + 1]?.text;
+		const hasNewline = line.newline.length > 0;
+		if (!QUOTED_LINE.test(line.text) && interruptsBlockquote(line.text, nextLine, hasNewline)) current = null;
+		const state = advanceFence(line.text, fence, nextLine, hasNewline);
 		fence = state.fence;
 		const match = state.isCode ? null : line.text.match(CALLOUT_START);
 		const rawType = match?.[1];
