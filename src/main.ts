@@ -247,7 +247,7 @@ export default class CalloutNavigatorPlugin extends Plugin {
 
 		if (!leaf) return;
 
-		this.app.workspace.revealLeaf(leaf);
+		await this.app.workspace.revealLeaf(leaf);
 
 		if (leaf.view instanceof CalloutNavigatorView) {
 			await leaf.view.refresh();

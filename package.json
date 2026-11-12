@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"name": "sidebar-callouts",
+	"version": "0.1.0",
+	"description": "List callouts in the current Obsidian note in a sidebar and jump to them.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {

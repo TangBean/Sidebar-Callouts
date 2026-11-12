@@ -1,92 +1,45 @@
-# Obsidian Sample Plugin
+# Sidebar Callouts
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+An [Obsidian](https://obsidian.md) plugin that lists callouts in the active Markdown note and lets you jump to them from the sidebar. Requires Obsidian 1.7.2 or later.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Use
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
+1. Open a Markdown note containing callouts.
+2. Select the **Open Sidebar Callouts** ribbon icon, or run **Open Sidebar Callouts** from the command palette.
+3. Select a callout in the sidebar to scroll to its source line. You can also focus an entry and press **Enter** or **Space**.
 
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and outputs a Notice on click.
-- Registers a global interval which logs 'setInterval' to the console.
+The list refreshes when you edit the note or switch notes. Each entry shows its title, type, and line number. Common callout types and aliases have matching icons; custom types use a generic icon.
 
-## First time developing plugins?
+If a callout has no title, the entry uses its first non-empty quoted content line, then its type name if there is no content. The `collapsed` and `expanded` labels reflect the `-` and `+` markers in the note, not the current fold state in Obsidian.
 
-Quick starting guide for new plugin devs:
+## Current limits
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `src/main.ts` to `main.js`.
-- Make changes to `src/main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+- Callouts must start with a single blockquote marker, such as `> [!note] Title`. Nested callouts are not listed.
+- Detection does not account for fenced code blocks. Callout-shaped lines inside them can appear in the list.
+- Titles are displayed as plain text; Markdown formatting is not rendered in the sidebar.
 
-## Releasing new releases
+The plugin runs locally and offline. It reads the active note, makes no network requests, and collects no telemetry.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## Manual installation
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/TangBean/Sidebar-Callouts/releases/latest).
+2. Create `<Vault>/.obsidian/plugins/sidebar-callouts/` and copy all three files directly into it.
+3. Reload Obsidian, then enable **Sidebar Callouts** in **Settings → Community plugins**.
 
-## Adding your plugin to the community plugin list
+To update, replace the same three files with those from the new release and reload Obsidian.
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+## Development
 
-## How to use
+Use Node.js 24 and npm, matching the release workflow.
 
-- Clone this repo.
-- Make sure your NodeJS is at least v18 (`node --version`).
-- `npm i` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code.
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-	"fundingUrl": "https://buymeacoffee.com"
-}
+```sh
+npm ci
+npm run build
+npm run lint
 ```
 
-If you have multiple URLs, you can also do:
+Use `npm run dev` for a watch build. In Windows PowerShell, use `npm.cmd` if execution policy prevents running `npm.ps1`.
 
-```json
-{
-	"fundingUrl": {
-		"Buy Me a Coffee": "https://buymeacoffee.com",
-		"GitHub Sponsor": "https://github.com/sponsors",
-		"Patreon": "https://www.patreon.com/"
-	}
-}
-```
+The production build writes `main.js` at the repository root. Copy it together with `manifest.json` and `styles.css` into the plugin folder above for local testing. Do not commit generated files such as `main.js` or `node_modules/`.
 
-## API Documentation
-
-See https://docs.obsidian.md
+See [RELEASE.md](RELEASE.md) for the release process.

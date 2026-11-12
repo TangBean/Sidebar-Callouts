@@ -2,7 +2,7 @@
 	"id": "sidebar-callouts",
 	"name": "Sidebar Callouts",
 	"version": "0.1.0",
-	"minAppVersion": "1.5.0",
+	"minAppVersion": "1.7.2",
 	"description": "List all callouts in the current note in a sidebar and jump to them.",
 	"author": "TangBean",
 	"isDesktopOnly": false
