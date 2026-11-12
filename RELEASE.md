@@ -28,13 +28,14 @@ The npm `version` hook updates the manifest and adds a missing versions entry. I
 ```powershell
 npm ci
 npm run build
+npm test
 npm run lint
 git status --short --branch
 git diff
 git diff --cached
 ```
 
-For a manual smoke test in Obsidian, follow the installation instructions in [README.md](README.md) and check opening the sidebar, switching notes, and jumping to a callout. Record whether this check was performed.
+For a manual smoke test in Obsidian, follow the installation instructions in [README.md](README.md) and check opening the sidebar, switching notes, jumping to a callout, and deleting a callout with **Delete**. Check surrounding blank lines and editor undo. Record whether this check was performed.
 
 Stage reviewed source, documentation, workflow, and version files by explicit path. Do not use `git add .`, and do not stage `main.js`, `node_modules/`, or other generated files. For the version files:
 

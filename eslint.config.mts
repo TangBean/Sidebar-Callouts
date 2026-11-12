@@ -29,4 +29,12 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		files: ['tests/**/*.mjs'],
+		languageOptions: {
+			globals: globals.node,
+			parserOptions: { projectService: false, project: null },
+		},
+		rules: { 'obsidianmd/no-nodejs-modules': 'off' },
+	},
 );
